@@ -1,0 +1,31 @@
+ALTER VIEW RoomList AS SELECT RoomNumber,Type,Gender,Name,(Type-COUNT(Re.StudentEmail))EmptySlot,Ro.BuildingID
+FROM Rooms Ro INNER JOIN Buildings B ON Ro.BuildingID=B.BuildingID LEFT JOIN Registrations Re ON Ro.RoomID=Re.RoomID WHERE 1 GROUP BY Ro.RoomID ORDER BY EmptySlot;
+
+ALTER VIEW StudentsIn AS 
+SELECT S.StudentEmail,S.Name,S.PhoneNumber,SC.SchoolName,R.RoomNumber,B.Name AS BuildingName, S.Gender,B.BuildingID
+FROM Students S INNER JOIN Registrations Re ON S.StudentEmail=Re.StudentEmail 
+INNER JOIN Schools SC ON SC.SchoolID=S.SchoolID 
+INNER JOIN Rooms R ON Re.RoomID=R.RoomID
+INNER JOIN Buildings B ON R.BuildingID=B.BuildingID
+WHERE Re.End>CURRENT_DATE() AND AdConfirm;
+
+
+CREATE VIEW StudentsIsIn AS SELECT S.StudentEmail,S.Name,S.Gender,So.SchoolName,COUNT(SI.StudentEmail) AS 'IsIn' FROM Students S INNER JOIN Schools So ON S.SchoolID=So.SchoolID LEFT JOIN StudentsIn SI ON S.StudentEmail=SI.StudentEmail
+GROUP BY S.StudentEmail;
+
+ALTER VIEW Waiting AS
+SELECT S.StudentEmail,S.Name,S.PhoneNumber,SC.SchoolName,R.RoomNumber,B.Name AS BuildingName, S.Gender,B.BuildingID
+FROM Students S INNER JOIN Registrations Re ON S.StudentEmail=Re.StudentEmail 
+INNER JOIN Schools SC ON SC.SchoolID=S.SchoolID 
+INNER JOIN Rooms R ON Re.RoomID=R.RoomID
+INNER JOIN Buildings B ON R.BuildingID=B.BuildingID
+WHERE Re.End>CURRENT_DATE() AND NOT AdConfirm;
+
+ALTER VIEW InNow AS
+SELECT * FROM Registrations WHERE End>CURRENT_DATE();
+
+ALTER VIEW EmptyRoom AS 
+SELECT RoomNumber,B.BuildingID,Type-COUNT(Re.RoomID) AS 'EmptySlot'
+FROM Rooms Ro LEFT JOIN InNow Re ON Ro.RoomID=Re.RoomID
+LEFT JOIN Buildings B ON Ro.BuildingID=B.BuildingID
+GROUP BY Ro.RoomID;
